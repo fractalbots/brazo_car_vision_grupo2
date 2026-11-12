@@ -1,0 +1,508 @@
+<title>Robot Vial UTI 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Semi+Condensed:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: estacion CAD de una sola pantalla. Visor 3D a todo lo ancho, panel de mando a la derecha (abajo en movil). */
+:root {
+  --bg: #e9edf1;
+  --panel: #ffffff;
+  --line: #d3dae2;
+  --fg: #18202a;
+  --muted: #5d6977;
+  --accent: #d98a0b;        /* ambar de cinta de seguridad */
+  --accent-ink: #1a1204;
+  --accent-soft: rgba(217, 138, 11, .14);
+  --viewport: #dfe4ea;
+  --ok: #2f8a57;
+  --f-display: "Saira Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151a; --panel: #192028; --line: #2a3440; --fg: #e4e9ef; --muted: #93a0ae;
+    --accent: #f2a93b; --accent-ink: #1a1204; --accent-soft: rgba(242, 169, 59, .16);
+    --viewport: #161c23; --ok: #5cc28a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151a; --panel: #192028; --line: #2a3440; --fg: #e4e9ef; --muted: #93a0ae;
+  --accent: #f2a93b; --accent-ink: #1a1204; --accent-soft: rgba(242, 169, 59, .16);
+  --viewport: #161c23; --ok: #5cc28a; color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+header {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px;
+  padding-block: 12px 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--line); background: var(--panel);
+}
+h1 { margin: 0; font-family: var(--f-display); font-weight: 700; font-size: 1.35rem; letter-spacing: .01em; text-wrap: balance; }
+h1 small { font-weight: 500; color: var(--muted); font-size: .8em; margin-left: 6px; }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--f-mono); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); font-weight: 500; }
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
+#vista { position: relative; min-width: 0; min-height: 0; background: var(--viewport); }
+#vista canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hint {
+  position: absolute; left: 12px; bottom: 10px; font-family: var(--f-mono); font-size: 11px; color: var(--muted);
+  pointer-events: none;
+}
+.estado[hidden] { display: none; }
+.estado {
+  position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-mono); color: var(--muted);
+}
+aside {
+  min-width: 0; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 18px;
+  padding-block: 16px 24px;
+  padding-left: 16px;
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.bloque { display: flex; flex-direction: column; gap: 8px; }
+.eti { font-family: var(--f-display); font-weight: 500; font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font: 500 13px var(--f-body); color: var(--fg); background: transparent; border: 0; border-right: 1px solid var(--line);
+  padding: 8px 4px; cursor: pointer;
+}
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--accent-soft); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lectura { font-family: var(--f-mono); font-size: 12px; line-height: 1.6; font-variant-numeric: tabular-nums; color: var(--muted); }
+.lectura b { color: var(--fg); font-weight: 500; }
+.toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.toggles label {
+  display: flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+  font-size: 13px;
+}
+.toggles input { accent-color: var(--accent); margin: 0; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.ficha { border-top: 1px solid var(--line); padding-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.ficha h2 { margin: 0; font-family: var(--f-display); font-size: 1.15rem; font-weight: 700; text-wrap: balance; }
+.ficha .tipo { align-self: flex-start; font: 500 11px var(--f-mono); padding: 2px 7px; border-radius: 4px; background: var(--accent-soft); color: var(--fg); }
+.ficha .tipo.com { background: transparent; border: 1px solid var(--line); color: var(--muted); }
+.ficha p { margin: 0; line-height: 1.5; max-width: 60ch; }
+.ficha dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; }
+.ficha dt { color: var(--muted); }
+.ficha dd { margin: 0; font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  body { overflow: auto; }
+  main { grid-template-columns: 1fr; grid-template-rows: 58vh auto; }
+  aside { border-left: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); overflow: visible; }
+  .stats { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<header>
+  <h1>Robot de inspección vial <small>v9 · UTI 2026B</small></h1>
+  <div class="stats" id="stats"></div>
+</header>
+
+<main>
+  <div id="vista">
+    <div class="estado" id="estado">Cargando modelo…</div>
+    <div class="hint">arrastra para girar · rueda o pellizco para zoom · toca una pieza</div>
+  </div>
+  <aside>
+    <div class="bloque">
+      <span class="eti">Robot</span>
+      <div class="seg" id="modelos">
+        <button type="button" data-m="A" aria-pressed="true">A · Clásico</button>
+        <button type="button" data-m="B" aria-pressed="false">B · Explorador</button>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <span class="eti">Vista</span>
+      <div class="seg" id="vistas">
+        <button type="button" data-v="tres" aria-pressed="true">3/4</button>
+        <button type="button" data-v="frente" aria-pressed="false">Frente</button>
+        <button type="button" data-v="lado" aria-pressed="false">Lado</button>
+        <button type="button" data-v="arriba" aria-pressed="false">Arriba</button>
+        <button type="button" data-v="abajo" aria-pressed="false">Abajo</button>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <span class="eti">Altura de la cámara (cabezal)</span>
+      <div class="seg" id="alturas">
+        <button type="button" data-p="1" aria-pressed="false">1</button>
+        <button type="button" data-p="2" aria-pressed="false">2</button>
+        <button type="button" data-p="3" aria-pressed="true">3</button>
+        <button type="button" data-p="4" aria-pressed="false">4</button>
+        <button type="button" data-p="5" aria-pressed="false">5</button>
+      </div>
+      <div class="lectura" id="lecturaCam"></div>
+    </div>
+
+    <div class="bloque">
+      <span class="eti">Mostrar</span>
+      <div class="toggles">
+        <label><input type="checkbox" id="tCarcasa" checked> Carcasa</label>
+        <label><input type="checkbox" id="tElec" checked> Electrónica</label>
+        <label><input type="checkbox" id="tCampo"> Campo cámara</label>
+        <label><input type="checkbox" id="tRayos"> Rayos X</label>
+      </div>
+    </div>
+
+    <div class="bloque">
+      <label class="eti" for="despiece">Despiece</label>
+      <input type="range" id="despiece" min="0" max="100" value="0">
+    </div>
+
+    <div class="ficha" id="ficha"></div>
+  </aside>
+</main>
+
+<script src="robot_modelos.js"></script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// ---------- datos del diseno (mm, ejes del robot: x derecha, y adelante, z arriba) ----------
+const SUELO = -24.7;                       // contacto de ruedas bajo la cara inferior de la placa
+// lente de la C270 en la posicion 3 de cada robot. A: 7 agujeros cada 12 mm. B: ranura continua (aqui en pasos de 16 mm)
+const CAMD = {
+  A: { cam0: new THREE.Vector3(0, 129.13, 149.33), paso: 12 },
+  B: { cam0: new THREE.Vector3(0, 168.64, 152.27), paso: 16 },
+};
+const TILT = 25, FOV_V = 38.2, FOV_H = 49.6;
+const altura = (p) => CAMD[modelo].cam0.z - SUELO + (p - 3) * CAMD[modelo].paso;
+
+const PIEZAS = {
+  placa:   { n: 'Placa base', f: '1_placa_base.stl', d: 'Chasis de 190 × 215 × 5 mm. Lleva las sillas de los motores, la bahía de la batería, los separadores de las placas y los postes de la carcasa.',
+             dl: [['Insertos', '8 M3 en sillas · 8 M3 en separadores ESP32 y L298N'], ['Impresión', 'Boca arriba, 5 perímetros, 35 %, brim 8 mm'], ['Volumen', '240 cm³']] },
+  abraz:   { n: 'Abrazadera de motor', f: '2A_abrazadera_reductora_x2.stl + 2B_abrazadera_cuerpo_x2.stl', d: 'Cierra el motor contra su silla. La silla acaba 1 mm bajo el eje, así que al apretar la abrazadera presiona el motor.',
+             dl: [['Tornillo', 'M3 × 16 al inserto de la silla'], ['Posición', '2A en x = 84 sobre la reductora (Ø25.0) · 2B en x = 58 sobre el cuerpo (Ø24–24.5, esquina recortada)'], ['Impresión', 'Invertida, arco hacia arriba']] },
+  mastil:  { n: 'Mástil de sensores', f: '3_mastil_sensores.stl', d: 'Poste con 7 agujeros M4 para la altura del cabezal, montante trasero del BH1750 y frente del ultrasónico.',
+             dl: [['Tuercas', '2 M4 atrapadas en el pie, desde abajo'], ['Tornillos', 'M4 × 16 (con barra IR) · M4 × 10 sin barra'], ['Impresión', 'De pie, soporte ligero']] },
+  cabezal: { n: 'Cabezal de cámara', f: '8_cabezal_camara.stl', d: 'Horquilla que abraza el poste y lleva la C270 y el VL53L1X al mismo ángulo de 25°. Cambia de altura sin tuercas sueltas.',
+             dl: [['Tuercas', '2 M4 atrapadas en los tetones del lado izquierdo'], ['Tornillos', 'M4 × 45 desde el lado derecho'], ['Cámara', 'Rosca 1/4" con tuerca embebida']] },
+  caster:  { n: 'Rueda loca', f: '4_rueda_loca.stl', d: 'Copa para bola de 16 mm. Su altura deja los tres apoyos en el mismo plano (diferencia 0.00 mm).',
+             dl: [['Insertos', '4 M3'], ['Tornillos', 'M3 × 10 avellanado desde arriba'], ['Impresión', 'Invertida, copa arriba']] },
+  carcasa: { n: 'Carcasa clásica', f: '5_carcasa_superior.stl', d: 'Cubierta de pared uniforme de 2.8 mm. El power bank va encima, sujeto con correa por las dos ranuras.',
+             dl: [['Insertos', '4 M3 en las columnas'], ['Tornillos', 'M3 × 20 desde abajo, por la placa'], ['Impresión', 'Boca abajo, sin soporte']] },
+  carcasaR:{ n: 'Carcasa rover (blindada)', f: '5R_carcasa_rover.stl', d: 'Caja blindada con biseles en todas las aristas, frente vertical con dos faros LED de 10 mm y líneas de panel grabadas. Misma base, mismos postes y mismas ventanas que la clásica.',
+             dl: [['Insertos', '4 M3 abajo (placa) · 4 M3 arriba (cubierta)'], ['Tornillos', 'M3 × 20 desde abajo, por la placa'], ['Faros', '2 LED de 10 mm a presión desde dentro'], ['Impresión', 'Boca abajo, sin soporte']] },
+  cubierta:{ n: 'Cubierta solar', f: '12_cubierta_solar_derecha.stl + _izquierda.stl', d: 'Panel de celdas grabadas que pasa por encima de las ruedas y esconde el power bank. Va en dos mitades para que entre en una cama de 220 × 220. Imprímela en filamento azul oscuro o negro.',
+             dl: [['Fijación', '2 × M3 × 30 cabeza plana por mitad, a los insertos de arriba de las columnas'], ['Aire', '13.5 mm sobre la llanta · caben power banks de hasta 19 mm'], ['Ancho total', '290 mm'], ['Impresión', 'Celdas sobre la cama, sin soporte']] },
+  pcb:     { n: 'PCB de control (casera)', f: 'pcb_control_plantilla_1a1.pdf', d: 'Placa a una cara hecha por planchado. Lleva el ESP32 en tiras hembra y los conectores hacia el L298N, los encoders y los sensores.', tipo: 'PCB casera · FR2/FR4 1.6 mm',
+             dl: [['Medida', '76 × 70 mm (cabe en placa de 10 × 10)'], ['Montaje', '4 separadores de latón M2.5 × 16 mm sobre la Pi'], ['Altura máx.', '13.5 mm sobre la placa'], ['Enlace a la Pi', 'Cable USB']] },
+  tapabat: { n: 'Tapa de batería', f: '7_tapa_bateria.stl', d: 'Tapa a presión de la bahía de la 3S.', dl: [['Fijación', 'A presión, sin tornillos']] },
+  barra:   { n: 'Barra IR frontal', f: '9_barra_ir_opcional.stl', d: 'Opcional. Va bajo el morro, 132 mm por delante del eje. La sujetan los mismos 2 pernos del mástil.',
+             dl: [['Insertos', '13 posiciones M3 cada 10 mm (−70 a +70)'], ['Sensor al suelo', '8.8 mm'], ['Impresión', 'Invertida, cara lisa en la cama']] },
+};
+const PIEZAS_B = {
+  carcasa: { n: 'Carcasa Explorador', f: '5E_carcasa_explorador.stl', d: 'Cuerpo redondeado: planta con radios, flancos curvos, nariz a 55° con rejilla, rampa trasera a 45° y rejilla hexagonal sobre la Pi y el L298N. Lleva el interruptor en el techo.',
+             dl: [['Insertos', '4 M3 en las columnas'], ['Tornillos', 'M3 × 20 adelante · M3 × 25 atrás (pasan por la mochila)'], ['Interruptor', 'Balancín KCD1 (corte 13 × 19)'], ['Impresión', 'Boca abajo, sin soporte']] },
+  mochila: { n: 'Portapowerbank trasero', f: '13E_portapowerbank.stl', d: 'Mochila donde el power bank va de pie, detrás del robot. Su lengüeta pasa bajo la placa y se sujeta con los 2 tornillos traseros de la carcasa: no hay que tocar la placa base.',
+             dl: [['Power bank', 'Hasta 150 × 75 × 19 mm (Xiaomi 22.5 W: 147.8 × 73.9 × 15.3)'], ['Insertos', '2 M3 arriba, para la barra de cierre'], ['Ventanas', 'A los dos lados: el USB-C sale por cualquiera'], ['Impresión', 'De pie, sin soporte']] },
+  cierre:  { n: 'Barra de cierre', f: '13E_barra_cierre.stl', d: 'Traba el power bank desde arriba. Pon una tira de foam de 2 a 3 mm debajo.', dl: [['Tornillos', '2 × M3 × 10 cabeza plana'], ['Impresión', 'Plana']] },
+  mastil:  { n: 'Mástil pro', f: '3E_mastil_pro.stl', d: 'Torre aerodinámica hueca: los cables van por dentro y salen por la canaleta trasera. Ranura de altura continua con escala grabada cada 5 mm y alojamiento del HC-SR04 abajo.',
+             dl: [['Tuercas', '2 M4 atrapadas en el pie (igual que el A)'], ['Insertos', '2 M3 para el bisel del HC-SR04'], ['Impresión', 'De pie, sin soporte']] },
+  tapabh:  { n: 'Tapa con BH1750', f: '3E_tapa_bh1750.stl', d: 'Cierra la torre y lleva el sensor de luz arriba de todo: nada le hace sombra.', dl: [['Fijación', 'A presión + M3 × 8 lateral a un inserto'], ['Sensor', '2 × M2 autorroscante']] },
+  bisel:   { n: 'Bisel del HC-SR04', f: '6E_bisel_hcsr04.stl', d: 'Aprieta el HC-SR04 contra su rebaje. Agujeros de 17 mm para los transductores (26 mm entre centros) y hueco para el cristal.', dl: [['Tornillos', '2 × M3 × 10 cabeza plana a insertos'], ['Impresión', 'Cara frontal en la cama']] },
+  cabezal: { n: 'Carro de cámara', f: '8E_carro_camara.stl', d: 'Se desliza por la ranura y se fija con 2 pernos a la tuerca deslizante. Su horquilla tiene un transportador grabado de 0 a 45° cada 5°. Abajo lleva el VL53L1X horizontal.',
+             dl: [['Tornillos', '2 × M4 × 16 a la tuerca deslizante'], ['Inclinación', 'M3 × 10 por la ranura curva de cada brazo'], ['VL53L1X', '2 × M2 autorroscante, mirando al frente'], ['Impresión', 'Respaldo en la cama, sin soporte']] },
+  cuna:    { n: 'Cuna de la C270', f: '8E_cuna_camara.stl', d: 'Gira entre los brazos del carro. La cámara va con tornillo 1/4"-20 y tuerca embebida, igual que en el A.',
+             dl: [['Insertos', '4 M3 (2 ejes + 2 trabas)'], ['Impresión', 'Plataforma en la cama']] },
+  tuercad: { n: 'Tuerca deslizante', f: '8E_tuerca_deslizante.stl', d: 'Va dentro de la torre con 2 tuercas M4. Se mete por arriba antes de poner la tapa.', dl: [['Tuercas', '2 × M4']] },
+};
+const COMERCIAL = [
+  ['pi5', 'Raspberry Pi 5'], ['sep', 'Separador'], ['gpio', 'Raspberry Pi 5'], ['puerto', 'Raspberry Pi 5'],
+  ['separador', 'Separador de latón M2.5 × 16'], ['hembra', 'Tira hembra 2.54'], ['faro', 'LED de 10 mm'], ['cooler', 'Raspberry Pi 5'], ['aspa', 'Raspberry Pi 5'], ['usb', 'Raspberry Pi 5'], ['ethernet', 'Raspberry Pi 5'],
+  ['esp32', 'ESP32 DevKit V1 (30 pines)'], ['l298n', 'Driver L298N (dos puentes H)'], ['disipador', 'Driver L298N'], ['aleta', 'Driver L298N'], ['borneras', 'Borneras'],
+  ['bateria', 'Batería 3S 11.1 V'], ['powerbank', 'Power bank de la Pi'], ['correa', 'Correa del power bank'],
+  ['reductora', 'Motor 25GA-370 400 RPM'], ['motor', 'Motor 25GA-370 400 RPM'], ['encoder', 'Encoder del motor'],
+  ['neum', 'Llanta 85 mm'], ['taco', 'Llanta 85 mm'], ['rin', 'Llanta 85 mm'], ['buje', 'Llanta 85 mm'], ['radio', 'Llanta 85 mm'],
+  ['c270', 'Logitech C270'], ['lente', 'Logitech C270'], ['vl53l1x', 'VL53L1X (ToF)'], ['bh1750', 'BH1750 (luz)'],
+  ['us', 'Ultrasónico HC-SR04'], ['interruptor', 'Interruptor de balancín KCD1'], ['m3', 'Tornillo M3 (eje y traba)'], ['tcrt', 'TCRT5000'], ['bola', 'Bola de 16 mm'], ['m4', 'Perno M4 × 16'], ['m4cab', 'Perno M4 × 40'], ['inserto', 'Inserto M4 de latón'],
+];
+const ELECTRONICA = ['pi5', 'sep', 'cooler', 'aspa', 'usb', 'ethernet', 'esp32', 'l298n', 'disipador', 'aleta', 'borneras', 'bateria',
+  'gpio', 'puerto', 'separador', 'pcb', 'hembra', 'faro',
+  'motor', 'encoder', 'reductora', 'tcrt', 'us', 'bh1750', 'vl53l1x', 'c270', 'lente'];
+const CABEZAL_GRUPO = ['cabezal', 'c270', 'lente', 'vl53l1x', 'inserto', 'm4cab', 'cuna', 'tuercad', 'm3'];
+const CUBIERTA = ['carcasa', 'tapabat', 'powerbank', 'correa', 'mochila', 'cierre', 'interruptor'];
+
+const clave = (name) => name.split('_')[0];
+const piezasDe = () => modelo === 'B' ? { ...PIEZAS, ...PIEZAS_B } : PIEZAS;
+const esImpresa = (k) => k in piezasDe() && k !== 'pcb';
+const STATS = {
+  A: [['10', 'piezas impresas'], ['≈1.55', 'kg'], ['70.5 %', 'peso sobre ruedas'], ['23', 'insertos M3 · 4 tuercas M4']],
+  B: [['16', 'piezas impresas'], ['≈1.66', 'kg'], ['0–45°', 'inclinación graduada de la cámara'], ['32', 'insertos M3 · 4 tuercas M4']],
+};
+let modelo = 'A';
+
+// ---------- escena ----------
+const cont = document.getElementById('vista');
+const css = getComputedStyle(document.documentElement);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+cont.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const pintarFondo = () => {
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--viewport').trim() || '#dfe4ea';
+  scene.background = new THREE.Color(c);
+};
+pintarFondo();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', pintarFondo);
+new MutationObserver(pintarFondo).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+const cam = new THREE.PerspectiveCamera(32, 1, 2, 12000);
+const ctrl = new OrbitControls(cam, renderer.domElement);
+ctrl.enableDamping = true; ctrl.dampingFactor = 0.08;
+
+const key = new THREE.DirectionalLight(0xffffff, 2.4);
+key.position.set(380, 620, -320); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -300, right: 300, top: 300, bottom: -300, near: 10, far: 1800 });
+key.shadow.bias = -0.0006;
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xdbe6ff, 0.9); fill.position.set(-480, 260, 260); scene.add(fill);
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+// el robot vive en sus propios ejes (z arriba); se gira una vez al entrar en la escena
+const robot = new THREE.Group(); robot.rotation.x = -Math.PI / 2; scene.add(robot);
+
+// suelo con reticula de 50 mm
+const sombra = new THREE.Mesh(new THREE.PlaneGeometry(6000, 6000), new THREE.ShadowMaterial({ opacity: 0.18 }));
+sombra.rotation.x = -Math.PI / 2; sombra.position.y = SUELO; sombra.receiveShadow = true; scene.add(sombra);
+const grid = new THREE.GridHelper(3000, 60, 0x8a96a3, 0x8a96a3);
+grid.position.y = SUELO + 0.05; grid.material.transparent = true; grid.material.opacity = 0.22; scene.add(grid);
+
+// materiales a partir del color de cada malla
+const PALETA = [
+  { c: [108,122,140], m: { color: 0x7a8696, roughness: 0.6, metalness: 0.05 } },
+  { c: [238,241,245], m: { color: 0xf1f3f5, roughness: 0.5, metalness: 0.0 } },
+  { c: [38,38,38],    m: { color: 0x26272a, roughness: 0.9, metalness: 0.0 } },
+  { c: [176,44,56],   m: { color: 0xc3122a, roughness: 0.25, metalness: 0.7 } },
+  { c: [170,176,183], m: { color: 0xc6cbd1, roughness: 0.25, metalness: 0.9 } },
+  { c: [26,122,64],   m: { color: 0x1b7a44, roughness: 0.5, metalness: 0.1 } },
+  { c: [40,70,150],   m: { color: 0x2a4c8c, roughness: 0.5, metalness: 0.1 } },
+  { c: [70,45,110],   m: { color: 0x2f2f36, roughness: 0.7, metalness: 0.05 } },
+  { c: [58,62,70],    m: { color: 0x3a3f47, roughness: 0.45, metalness: 0.25 } },
+  { c: [95,40,125],   m: { color: 0x6b30a0, roughness: 0.45, metalness: 0.1 } },
+  { c: [12,12,14],    m: { color: 0x0b0b0d, roughness: 0.1, metalness: 0.3 } },
+  { c: [190,150,70],  m: { color: 0xc89b4a, roughness: 0.3, metalness: 0.9 } },
+  { c: [150,105,55],  m: { color: 0xb5813f, roughness: 0.55, metalness: 0.15 } },
+  { c: [25,45,95],    m: { color: 0x1d2f5e, roughness: 0.25, metalness: 0.35 } },
+  { c: [250,250,235], m: { color: 0xfffbe8, roughness: 0.2, metalness: 0.0, emissive: 0x6b6450 } },
+];
+function material(c) {
+  let best = PALETA[0], bd = Infinity;
+  for (const p of PALETA) { const d = (c[0]-p.c[0])**2 + (c[1]-p.c[1])**2 + (c[2]-p.c[2])**2; if (d < bd) { bd = d; best = p; } }
+  return new THREE.MeshStandardMaterial({ ...best.m, flatShading: true, side: THREE.DoubleSide });
+}
+
+const mallas = [];       // { mesh, k, base: Vector3 }
+const estado = document.getElementById('estado');
+
+function cargarModelo(m) {
+  modelo = m;
+  document.querySelectorAll('#modelos button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.m === m)));
+  $('stats').innerHTML = STATS[m].map(([a, b]) => `<span><b>${a}</b> ${b}</span>`).join('');
+  for (const { mesh } of mallas) { robot.remove(mesh); mesh.geometry.dispose(); mesh.material.dispose(); }
+  mallas.length = 0;
+  try {
+    const bin = Uint8Array.from(atob(m === 'A' ? window.ROBOT_GLB_A : window.ROBOT_GLB_B), c => c.charCodeAt(0));
+    new GLTFLoader().parse(bin.buffer, '', modeloListo, fallo);
+  } catch (e) { fallo(e); }
+}
+function fallo() { estado.hidden = false; estado.textContent = 'No se pudo cargar el modelo 3D. Recarga la página.'; }
+let primera = true;
+function modeloListo(gl) {
+  gl.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    const a = o.geometry.getAttribute('color');
+    let c = [200, 200, 200];
+    if (a) c = [Math.round(a.getX(0) * 255), Math.round(a.getY(0) * 255), Math.round(a.getZ(0) * 255)];
+    else if (o.material && o.material.color) { const k = o.material.color; c = [k.r * 255, k.g * 255, k.b * 255].map(Math.round); }
+    if (a) o.geometry.deleteAttribute('color');
+    o.material = material(c);
+    o.castShadow = true; o.receiveShadow = true;
+  });
+  const lista = [];
+  gl.scene.traverse((o) => { if (o.isMesh) lista.push(o); });
+  for (const o of lista) {
+    o.updateWorldMatrix(true, false);
+    o.applyMatrix4(o.parent.matrixWorld);  // se aplana: todas cuelgan del grupo del robot
+    robot.add(o);
+    mallas.push({ mesh: o, k: clave(o.name), n: o.name, base: o.position.clone() });
+  }
+  estado.hidden = true;
+  if (primera) { primera = false; vista('tres', false); }
+  seleccionar(modelo === 'B' ? 'carcasa' : 'pcb');
+}
+
+// ---------- campo de vision de la C270 ----------
+const campo = new THREE.Group(); robot.add(campo);
+const colAcento = () => new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#d98a0b');
+function dibujarCampo(pos) {
+  campo.clear();
+  const o = CAMD[modelo].cam0.clone(); o.z += (pos - 3) * CAMD[modelo].paso;
+  const t = THREE.MathUtils.degToRad(TILT);
+  const eje = new THREE.Vector3(0, Math.cos(t), -Math.sin(t));
+  const arr = new THREE.Vector3(0, Math.sin(t), Math.cos(t));
+  const der = new THREE.Vector3(1, 0, 0);
+  const tv = Math.tan(THREE.MathUtils.degToRad(FOV_V / 2)), th = Math.tan(THREE.MathUtils.degToRad(FOV_H / 2));
+  const pts = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([h, v]) => {
+    const d = eje.clone().addScaledVector(arr, v * tv).addScaledVector(der, h * th);
+    const s = (SUELO - o.z) / d.z;
+    return o.clone().addScaledVector(d, s);
+  });
+  const col = colAcento();
+  const lin = [];
+  for (const p of pts) lin.push(o, p);
+  for (let i = 0; i < 4; i++) lin.push(pts[i], pts[(i + 1) % 4]);
+  campo.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(lin),
+    new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.9 })));
+  const g = new THREE.BufferGeometry().setFromPoints([pts[0], pts[1], pts[2], pts[0], pts[2], pts[3]].map(p => p.clone().setZ(SUELO + 0.3)));
+  campo.add(new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false })));
+}
+
+// ---------- estado de la interfaz ----------
+let posCab = 3, sel = null;
+const $ = (id) => document.getElementById(id);
+
+function aplicar() {
+  const ex = $('despiece').value / 100;
+  const carc = $('tCarcasa').checked, elec = $('tElec').checked, rayos = $('tRayos').checked;
+  for (const { mesh, k, n, base } of mallas) {
+    const enPCB = ['pcb', 'hembra', 'esp32', 'borneras_der', 'borneras_izq', 'usb_esp32'].some(q => n.startsWith(q));
+    const dz =
+      k === 'cubierta' ? 190 * ex :
+      CUBIERTA.includes(k) || k === 'faro' ? 130 * ex :
+      enPCB ? 60 * ex :
+      CABEZAL_GRUPO.includes(k) ? (posCab - 3) * CAMD[modelo].paso + 95 * ex :
+      ['mastil', 'us', 'bh1750', 'tapabh', 'bisel'].includes(k) ? 45 * ex :
+      k === 'abraz' ? 30 * ex :
+      ['barra', 'tcrt', 'm4'].includes(k) ? -55 * ex :
+      ['caster', 'bola'].includes(k) ? -40 * ex :
+      ['pi5', 'sep', 'separador', 'cooler', 'aspa', 'usb', 'ethernet', 'gpio', 'puerto', 'l298n', 'disipador', 'aleta', 'borneras'].includes(k) ? 18 * ex : 0;
+    mesh.position.set(base.x, base.y, base.z + dz);
+    let vis = true;
+    if (!carc && (CUBIERTA.includes(k) || k === 'cubierta' || k === 'faro')) vis = false;
+    if (!elec && ELECTRONICA.includes(k)) vis = false;
+    mesh.visible = vis;
+    const m = mesh.material;
+    const trans = rayos && esImpresa(k);
+    m.transparent = trans; m.opacity = trans ? 0.22 : 1; m.depthWrite = !trans;
+    m.emissive = new THREE.Color(sel && k === sel ? colAcento() : 0x000000);
+    m.emissiveIntensity = sel && k === sel ? 0.35 : 0;
+    m.needsUpdate = true;
+  }
+  campo.visible = $('tCampo').checked;
+  dibujarCampo(posCab);
+  const h = altura(posCab);
+  const t = THREE.MathUtils.degToRad(TILT), v = THREE.MathUtils.degToRad(FOV_V / 2);
+  const cerca = h / Math.tan(t + v), lejos = h / Math.tan(t - v);
+  $('lecturaCam').innerHTML =
+    `Lente a <b>${h.toFixed(1)} mm</b> del suelo, inclinada 25°${modelo === 'B' ? ' (ajustable de 0 a 45°)' : ''}<br>` +
+    `Ve el suelo de <b>${Math.round(cerca)}</b> a <b>${Math.round(lejos)} mm</b> por delante<br>` +
+    `Elige la posición con la prueba de foco del README`;
+}
+
+function seleccionar(k) {
+  sel = k; aplicar();
+  const f = $('ficha');
+  if (!k) { f.innerHTML = ''; return; }
+  const P = piezasDe();
+  if (P[k]) {
+    const p = P[k];
+    f.innerHTML = `<span class="tipo">${p.tipo || 'Pieza impresa · PETG'}</span><h2>${p.n}</h2><p>${p.d}</p>
+      <dl><dt>Archivo</dt><dd>${p.f}</dd>${p.dl.map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('')}</dl>`;
+  } else {
+    const c = COMERCIAL.find(([q]) => q === k);
+    f.innerHTML = `<span class="tipo com">Componente comercial · maqueta a escala</span><h2>${c ? c[1] : k}</h2>
+      <p>Se muestra para comprobar que cabe y no choca. No se imprime.</p>`;
+  }
+}
+
+// ---------- vistas ----------
+const OBJ = new THREE.Vector3(0, 55, -25);
+const VISTAS = {
+  tres:   [430, 300, -460],
+  frente: [0, 120, -640],
+  lado:   [640, 110, -25],
+  arriba: [0, 720, -40],
+  abajo:  [260, -330, -330],
+  campo:  [1500, 700, -620],
+};
+const OBJS = { campo: new THREE.Vector3(0, 0, -720) };
+let vistaActual = 'tres';
+function vista(n, animar = true) {
+  document.querySelectorAll('#vistas button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === n)));
+  vistaActual = n;
+  const obj = OBJS[n] || OBJ;
+  // en pantallas angostas la camara se aleja para que el robot entre completo
+  const k = Math.max(1, 1.35 / Math.max(cam.aspect, 0.3));
+  const destino = new THREE.Vector3(...VISTAS[n]).sub(obj).multiplyScalar(k).add(obj);
+  if (!animar || matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    cam.position.copy(destino); ctrl.target.copy(obj); ctrl.update(); return;
+  }
+  const ini = cam.position.clone(), iniT = ctrl.target.clone(), t0 = performance.now();
+  const paso = (now) => {
+    const u = Math.min(1, (now - t0) / 600), e = 1 - Math.pow(1 - u, 3);
+    cam.position.lerpVectors(ini, destino, e); ctrl.target.lerpVectors(iniT, obj, e); ctrl.update();
+    if (u < 1) requestAnimationFrame(paso);
+  };
+  requestAnimationFrame(paso);
+}
+document.querySelectorAll('#vistas button').forEach(b => b.addEventListener('click', () => vista(b.dataset.v)));
+document.querySelectorAll('#alturas button').forEach(b => b.addEventListener('click', () => {
+  posCab = +b.dataset.p;
+  document.querySelectorAll('#alturas button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  aplicar();
+}));
+['tCarcasa', 'tElec', 'tCampo', 'tRayos'].forEach(id => $(id).addEventListener('change', () => {
+  if (id === 'tCampo') vista($(id).checked ? 'campo' : 'tres');
+  aplicar();
+}));
+$('despiece').addEventListener('input', aplicar);
+document.querySelectorAll('#modelos button').forEach(b => b.addEventListener('click', () => { if (b.dataset.m !== modelo) cargarModelo(b.dataset.m); }));
+
+// ---------- seleccion con clic / toque ----------
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+let abajo = null;
+renderer.domElement.addEventListener('pointerdown', (e) => { abajo = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener('pointerup', (e) => {
+  if (!abajo || Math.hypot(e.clientX - abajo[0], e.clientY - abajo[1]) > 6) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  ptr.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ptr, cam);
+  const vis = mallas.filter(m => m.mesh.visible && !(m.mesh.material.transparent && m.mesh.material.opacity < 0.5)).map(m => m.mesh);
+  const hit = ray.intersectObjects(vis, false)[0];
+  seleccionar(hit ? clave(hit.object.name) : null);
+});
+
+// ---------- bucle ----------
+function ajustar() {
+  const w = cont.clientWidth, h = cont.clientHeight;
+  renderer.setSize(w, h, false); cam.aspect = w / Math.max(h, 1); cam.updateProjectionMatrix();
+}
+new ResizeObserver(ajustar).observe(cont); ajustar();
+renderer.setAnimationLoop(() => { ctrl.update(); renderer.render(scene, cam); });
+cargarModelo(location.hash === '#rover' ? 'B' : 'A');
+</script>

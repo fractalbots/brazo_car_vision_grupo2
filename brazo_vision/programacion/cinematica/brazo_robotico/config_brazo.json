@@ -1,0 +1,16 @@
+{
+  "_nota": "Medidas sacadas de los ejes de giro del modelo CAD. SON UN PUNTO DE PARTIDA: mide el brazo armado con calibrador y corrige aqui. Ver LEEME_CINEMATICA.md",
+  "_unidades": "milimetros",
+  "altura_hombro": 117.0,
+  "_altura_hombro": "Del plano de la mesa al eje del hombro. 102 del brazo + 15 del pedestal.",
+  "L1": 136.4,
+  "_L1": "Eje del hombro (102.0) al eje del codo (238.4).",
+  "L2": 139.5,
+  "_L2": "Eje del codo (238.4) al eje de la muneca (377.9).",
+  "L3": 109.1,
+  "_L3": "Eje de la muneca (377.9) a la punta de los dedos (487.0).",
+  "offset_base_z": 10.0,
+  "_offset_base_z": "El eje vertical de giro de la base no esta en el centro geometrico.",
+  "codo_arriba": true,
+  "_codo_arriba": "true = solucion de codo arriba. Es la que da angulos sanos en esta mecanica: la muneca solo recorre 100 grados en vez de 135."
+}

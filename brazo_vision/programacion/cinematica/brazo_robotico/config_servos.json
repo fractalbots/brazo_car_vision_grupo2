@@ -1,0 +1,92 @@
+{
+  "_nota": "pulso_min/pulso_max en microsegundos, medidos con calibrar.py. NO uses estos valores sin calibrar: cada servo es distinto.",
+  "i2c_bus": 1,
+  "direccion": 64,
+  "frecuencia": 50,
+  "articulaciones": [
+    {
+      "nombre": "base",
+      "descripcion": "Giro de la base. Servo dentro de la base fija (altura 34-80 mm).",
+      "canal": 0,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": -90.0,
+      "ang_max": 90.0,
+      "home": 0.0,
+      "canal_espejo": null,
+      "vel_max": 60.0
+    },
+    {
+      "nombre": "hombro",
+      "descripcion": "PAR DE SERVOS espejados en los adaptadores de la base giratoria (altura 84-139 mm).",
+      "canal": 1,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": -55.0,
+      "ang_max": 90.0,
+      "home": 0.0,
+      "canal_espejo": 2,
+      "vel_max": 45.0
+    },
+    {
+      "nombre": "codo",
+      "descripcion": "Codo. Servo a la altura 201-255 mm.",
+      "canal": 3,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": 0.0,
+      "ang_max": 170.0,
+      "home": 0.0,
+      "canal_espejo": null,
+      "vel_max": 60.0
+    },
+    {
+      "nombre": "giro_antebrazo",
+      "descripcion": "Giro del antebrazo sobre su eje. Servo a la altura 284-338 mm.",
+      "canal": 4,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": -90.0,
+      "ang_max": 90.0,
+      "home": 0.0,
+      "canal_espejo": null,
+      "vel_max": 90.0
+    },
+    {
+      "nombre": "muneca",
+      "descripcion": "Inclinacion de la muneca. Servo a la altura 341-395 mm.",
+      "canal": 5,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": -20.0,
+      "ang_max": 135.0,
+      "home": 0.0,
+      "canal_espejo": null,
+      "vel_max": 90.0
+    },
+    {
+      "nombre": "giro_pinza",
+      "descripcion": "Giro de la pinza. Servo del soporte de rotacion (altura 428-483 mm).",
+      "canal": 6,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": -90.0,
+      "ang_max": 90.0,
+      "home": 0.0,
+      "canal_espejo": null,
+      "vel_max": 120.0
+    },
+    {
+      "nombre": "pinza",
+      "descripcion": "Abre y cierra la pinza (mueve la cremallera). 0 = cerrada, 90 = abierta.",
+      "canal": 7,
+      "pulso_min": 500,
+      "pulso_max": 2500,
+      "ang_min": 0.0,
+      "ang_max": 90.0,
+      "home": 45.0,
+      "canal_espejo": null,
+      "vel_max": 150.0
+    }
+  ]
+}
